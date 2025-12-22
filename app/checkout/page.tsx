@@ -165,23 +165,34 @@ export default function CheckoutPage() {
         },
         onSuccess: async (response: any) => {
           try {
-            const order = await createOrder(response.reference);
-
             const supabase = createClient();
+
+            // Find the order by payment reference
+            const { data: orders, error: findError } = await supabase
+              .from('orders')
+              .select('*')
+              .eq('payment_reference', response.reference)
+              .single();
+
+            if (findError || !orders) {
+              throw new Error('Order not found');
+            }
+
+            // Update the existing order
             await supabase
               .from('orders')
               .update({ payment_status: 'paid', status: 'confirmed' })
-              .eq('id', order.id);
+              .eq('id', orders.id);
 
             await supabase.from('order_status_history').insert({
-              order_id: order.id,
+              order_id: orders.id,
               status: 'confirmed',
               notes: 'Payment successful',
             });
 
             clearCart();
             toast.success('Payment successful!');
-            router.push(`/orders/${order.order_number}`);
+            router.push(`/orders/${orders.order_number}`);
           } catch (error) {
             console.error('Error updating order:', error);
             toast.error('Payment successful but order update failed. Please contact support.');

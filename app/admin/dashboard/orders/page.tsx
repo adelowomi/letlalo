@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Package, Eye } from 'lucide-react';
+import { Package, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,8 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', color: 'bg-red-500' },
 };
 
+const ORDERS_PER_PAGE = 10;
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,21 +47,50 @@ export default function AdminOrdersPage() {
   const [statusNotes, setStatusNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [currentPage, filterStatus]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus]);
 
   async function loadOrders() {
     try {
+      setLoading(true);
       const supabase = createClient();
-      const { data, error } = await supabase
+
+      // Build query
+      let query = supabase
         .from('orders')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
+
+      // Apply status filter if not 'all'
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+
+      // Apply search filter if provided
+      if (searchQuery.trim()) {
+        query = query.or(
+          `order_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_email.ilike.%${searchQuery}%`
+        );
+      }
+
+      // Apply pagination
+      const from = (currentPage - 1) * ORDERS_PER_PAGE;
+      const to = from + ORDERS_PER_PAGE - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
       setOrders(data || []);
+      setTotalOrders(count || 0);
     } catch (error) {
       console.error('Error loading orders:', error);
       toast.error('Failed to load orders');
@@ -120,14 +151,19 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const totalPages = Math.ceil(totalOrders / ORDERS_PER_PAGE);
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
 
   return (
     <div>
@@ -162,7 +198,7 @@ export default function AdminOrdersPage() {
             <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
-      ) : filteredOrders.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="py-20 text-center">
           <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
           <h3 className="mb-2 text-lg font-semibold">No orders found</h3>
@@ -173,57 +209,94 @@ export default function AdminOrdersPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredOrders.map((order) => (
-            <div
-              key={order.id}
-              className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/30"
-            >
-              <div className="flex-1">
-                <div className="mb-2 flex items-center gap-3">
-                  <h3 className="font-semibold">{order.order_number}</h3>
-                  <Badge className={statusConfig[order.status].color}>
-                    {statusConfig[order.status].label}
-                  </Badge>
-                  {order.payment_status === 'paid' && (
-                    <Badge variant="outline" className="border-green-500 text-green-700">
-                      Paid
+        <>
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/30"
+              >
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-3">
+                    <h3 className="font-semibold">{order.order_number}</h3>
+                    <Badge className={statusConfig[order.status].color}>
+                      {statusConfig[order.status].label}
                     </Badge>
-                  )}
+                    {order.payment_status === 'paid' && (
+                      <Badge variant="outline" className="border-green-500 text-green-700">
+                        Paid
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="grid gap-1 text-sm text-muted-foreground md:grid-cols-3">
+                    <div>
+                      <span className="font-medium">Customer:</span> {order.customer_name}
+                    </div>
+                    <div>
+                      <span className="font-medium">Email:</span> {order.customer_email}
+                    </div>
+                    <div>
+                      <span className="font-medium">Date:</span>{' '}
+                      {format(new Date(order.created_at), 'PPp')}
+                    </div>
+                  </div>
                 </div>
-                <div className="grid gap-1 text-sm text-muted-foreground md:grid-cols-3">
-                  <div>
-                    <span className="font-medium">Customer:</span> {order.customer_name}
+
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-lg font-bold">{formatCurrency(order.total)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.items.length} item(s)
+                    </p>
                   </div>
-                  <div>
-                    <span className="font-medium">Email:</span> {order.customer_email}
-                  </div>
-                  <div>
-                    <span className="font-medium">Date:</span>{' '}
-                    {format(new Date(order.created_at), 'PPp')}
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openOrderDialog(order)}
+                  >
+                    <Eye className="mr-1 h-4 w-4" />
+                    Manage
+                  </Button>
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-lg font-bold">{formatCurrency(order.total)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.items.length} item(s)
-                  </p>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-between border-t pt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * ORDERS_PER_PAGE + 1} to{' '}
+                {Math.min(currentPage * ORDERS_PER_PAGE, totalOrders)} of {totalOrders} orders
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
                 </div>
                 <Button
-                  size="sm"
                   variant="outline"
-                  onClick={() => openOrderDialog(order)}
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
                 >
-                  <Eye className="mr-1 h-4 w-4" />
-                  Manage
+                  Next
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
