@@ -6,6 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/paystack';
 
+interface RecentOrder {
+  order_number: string;
+  customer_name: string;
+  total: number;
+  status: string;
+  created_at: string;
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -13,7 +21,7 @@ export default function AdminDashboardPage() {
     totalOrders: 0,
     pendingOrders: 0,
     totalRevenue: 0,
-    recentOrders: [],
+    recentOrders: [] as RecentOrder[],
   });
   const [loading, setLoading] = useState(true);
 
@@ -144,7 +152,7 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {stats.recentOrders.map((order: any) => (
+              {stats.recentOrders.map((order) => (
                 <div
                   key={order.order_number}
                   className="flex items-center justify-between rounded-lg border p-4"
