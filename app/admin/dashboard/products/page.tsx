@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/rich-text-editor';
 import {
   Dialog,
   DialogContent,
@@ -259,13 +260,12 @@ export default function AdminProductsPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
+                <RichTextEditor
                   value={formData.description}
-                  onChange={handleInputChange}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, description: value }))
+                  }
                   placeholder="Product description..."
-                  rows={3}
                 />
               </div>
 
@@ -444,11 +444,11 @@ export default function AdminProductsPage() {
                     )}
                   </Button>
                   <Button
-                    size="sm"
+                    size="icon-sm"
                     variant="destructive"
                     onClick={() => deleteProduct(product)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-white" />
                   </Button>
                 </div>
               </CardContent>
