@@ -159,7 +159,7 @@ export default function ShopPage() {
           {loading ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {[...Array(8)].map((_, i) => (
-                <Card key={i} className="overflow-hidden">
+                <Card key={i} className="overflow-hidden p-0 gap-0">
                   <div className="h-80 animate-pulse bg-muted" />
                   <CardContent className="p-4">
                     <div className="mb-2 h-4 animate-pulse rounded bg-muted" />
@@ -189,7 +189,7 @@ export default function ShopPage() {
                 {filteredProducts.map((product) => (
                   <Card
                     key={product.id}
-                    className="group overflow-hidden transition-shadow hover:shadow-lg"
+                    className="group overflow-hidden transition-shadow hover:shadow-lg p-0 gap-0"
                   >
                     <Link href={`/products/${product.slug}`}>
                       <div className="relative h-80 overflow-hidden bg-muted">

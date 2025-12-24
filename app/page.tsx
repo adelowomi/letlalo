@@ -157,7 +157,7 @@ export default function Home() {
             {loading ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
+                  <Card key={i} className="overflow-hidden p-0 gap-0">
                     <div className="h-80 animate-pulse bg-muted" />
                     <CardContent className="p-4">
                       <div className="h-4 animate-pulse rounded bg-muted" />
@@ -176,7 +176,7 @@ export default function Home() {
                 {featuredProducts.map((product) => (
                   <Card
                     key={product.id}
-                    className="group overflow-hidden transition-shadow hover:shadow-lg"
+                    className="group overflow-hidden transition-shadow hover:shadow-lg p-0 gap-0"
                   >
                     <Link href={`/products/${product.slug}`}>
                       <div className="relative h-80 overflow-hidden bg-muted">
