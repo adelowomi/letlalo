@@ -62,6 +62,14 @@ export default function AdminProductsPage() {
     }
   }
 
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -73,11 +81,9 @@ export default function AdminProductsPage() {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
 
-      if (name === 'name' && !editingProduct) {
-        const slug = value
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
+      // Always auto-generate slug from product name
+      if (name === 'name') {
+        const slug = generateSlug(value);
         setFormData((prev) => ({ ...prev, slug }));
       }
     }
@@ -117,7 +123,7 @@ export default function AdminProductsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.price || !formData.slug) {
+    if (!formData.name || !formData.price) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -129,6 +135,9 @@ export default function AdminProductsPage() {
         .map((url) => url.trim())
         .filter((url) => url);
 
+      // Always generate slug from the product name to ensure consistency
+      const generatedSlug = generateSlug(formData.name);
+
       const productData = {
         name: formData.name,
         description: formData.description || null,
@@ -136,7 +145,7 @@ export default function AdminProductsPage() {
         category: formData.category || null,
         inventory_count: parseInt(formData.inventory_count) || 0,
         images: imagesArray,
-        slug: formData.slug,
+        slug: generatedSlug,
         is_visible: formData.is_visible,
         is_sold_out: formData.is_sold_out,
       };
@@ -159,9 +168,10 @@ export default function AdminProductsPage() {
       setDialogOpen(false);
       resetForm();
       loadProducts();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving product:', error);
-      toast.error(error.message || 'Failed to save product');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save product';
+      toast.error(errorMessage);
     }
   };
 
