@@ -222,9 +222,10 @@ export default function ShopPage() {
                         </h3>
                       </Link>
                       {product.description && (
-                        <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
-                          {product.description}
-                        </p>
+                        <div 
+                          className="mb-4 line-clamp-2 text-sm text-muted-foreground prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: product.description }}
+                        />
                       )}
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-primary">

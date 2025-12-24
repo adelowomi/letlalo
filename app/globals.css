@@ -150,3 +150,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Custom styles for HTML descriptions with line-clamp */
+  .line-clamp-2.prose {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-2.prose > * {
+    display: inline;
+    margin: 0;
+  }
+  
+  .line-clamp-2.prose p {
+    display: inline;
+  }
+  
+  .line-clamp-2.prose strong,
+  .line-clamp-2.prose em,
+  .line-clamp-2.prose b,
+  .line-clamp-2.prose i {
+    display: inline;
+  }
+  
+  .line-clamp-2.prose ul,
+  .line-clamp-2.prose ol {
+    display: inline;
+    padding: 0;
+    list-style: none;
+  }
+  
+  .line-clamp-2.prose li {
+    display: inline;
+  }
+  
+  .line-clamp-2.prose li::before {
+    content: none;
+  }
+}
